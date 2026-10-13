@@ -29,7 +29,6 @@ import type {
   PullRequestListInput,
   PreviewAnnotationPayload,
   ProviderApprovalDecision,
-  ThreadContextRecord,
   ProviderInteractionMode,
   ResolvedKeybindingsConfig,
   RuntimeMode,
@@ -241,6 +240,8 @@ import {
   terminalContextReference,
   terminalContextRecord,
   threadContextRecord,
+  memberContextRecord,
+  type LinkedContextRecord,
   threadContextReference,
 } from "~/lib/composerContextRecords";
 import { matchComposerThreadItems } from "@t3tools/client-runtime/composerThreadItems";
@@ -412,6 +413,7 @@ function SnapShotAttachmentFrame({
 }
 
 const COMPOSER_PULL_REQUEST_LIST_LIMIT = 99;
+const PUNTOS_MEMBER_INSTANCE_PATTERN = /^puntos-.+-code$/;
 const COMPOSER_PULL_REQUEST_RESULT_LIMIT = 12;
 const EMPTY_PULL_REQUEST_LIST_TARGETS: ReadonlyArray<EnvironmentQueryTarget<PullRequestListInput>> =
   [];
@@ -1092,9 +1094,11 @@ import {
 } from "lucide-react";
 import { proposedPlanTitle } from "@t3tools/shared/proposedPlanText";
 import { hasProviderSetup } from "./ProviderStatusBanner";
+import { PuntosAvatar } from "../puntos/PuntosAvatar";
 import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
+  isProviderInstancePickerReady,
   NO_PROVIDER_MODEL_SELECTION,
   sortProviderInstanceEntries,
   type ProviderInstanceEntry,
@@ -1496,7 +1500,7 @@ export interface ChatComposerHandle {
     terminalContexts: TerminalContextDraft[];
     previewAnnotations: PreviewAnnotationPayload[];
     reviewComments: ReviewCommentContext[];
-    threadContexts: ThreadContextRecord[];
+    threadContexts: LinkedContextRecord[];
     selectedPromptEffort: string | null;
     selectedModelOptionsForDispatch: unknown;
     selectedModelSelection: ModelSelection;
@@ -2148,6 +2152,23 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       ),
     [providerStatuses, settings, activeProjectId],
   );
+  // Puntos members the `@` picker offers: host-run "code" persona instances usable here.
+  const puntosMembers = useMemo(
+    () =>
+      providerInstanceEntries.flatMap((entry) =>
+        PUNTOS_MEMBER_INSTANCE_PATTERN.test(entry.instanceId) &&
+        isProviderInstancePickerReady(entry)
+          ? [
+              {
+                providerInstanceId: entry.instanceId,
+                name: entry.displayName.replace(/\s*·\s*código$/u, ""),
+                accentColor: entry.accentColor,
+              },
+            ]
+          : [],
+      ),
+    [providerInstanceEntries],
+  );
   const selectedProviderByThreadId = composerDraft.activeProvider ?? null;
   const {
     selectedProviderEntry,
@@ -2691,9 +2712,19 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const composerMenuItems = useMemo<ComposerCommandItem[]>(() => {
     if (!composerTrigger) return [];
     if (composerTrigger.kind === "path") {
-      // Threads only surface for a typed query so `@` alone stays a file picker. A title match
-      // is far more specific than a fuzzy path hit, so the few threads lead the list.
+      // Members and threads only surface for a typed query so `@` alone stays a file picker. A
+      // name or title match is far more specific than a fuzzy path hit, so they lead the list.
+      const memberQuery = composerTrigger.query.trim().toLowerCase();
       return [
+        ...(memberQuery.length === 0 ? [] : puntosMembers)
+          .filter((member) => member.name.toLowerCase().includes(memberQuery))
+          .map((member) => ({
+            id: `member:${member.providerInstanceId}`,
+            type: "member" as const,
+            icon: <PuntosAvatar shape="circle" color={member.accentColor} />,
+            label: member.name,
+            description: "Puntos member",
+          })),
         ...matchComposerThreadItems({
           shells: environmentThreadShells,
           environmentId,
@@ -2851,6 +2882,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     pullRequestProjectId,
     pullRequestRepository,
     pullRequestTriggerNumber,
+    puntosMembers,
     selectedProvider,
     selectedProviderSkills,
     selectedProviderSlashCommands,
@@ -3344,7 +3376,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
               ? reviewCommentContextRecord(existing.record)
               : existing?.kind === "preview-annotation"
                 ? previewAnnotationContextRecord(existing.record)
-                : existing?.kind === "thread"
+                : existing?.kind === "thread" || existing?.kind === "member"
                   ? existing.record
                   : existing
                     ? (uploadedContextRecordFromDraft(existing) ?? undefined)
@@ -3396,6 +3428,13 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           case "thread": {
             // The agent can only read threads on its own server; a pasted foreign one is dropped.
             if (record.environmentId !== environmentId) break;
+            addComposerDraftThreadContexts(attachmentDraftTarget, [record], {
+              appendReference: false,
+            });
+            rewritten.set(record.contextId, record.contextId);
+            break;
+          }
+          case "member": {
             addComposerDraftThreadContexts(attachmentDraftTarget, [record], {
               appendReference: false,
             });
@@ -3720,7 +3759,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const removedContextPayloadsRef = useRef<{
     terminals: Map<string, TerminalContextDraft>;
     reviewComments: Map<string, ReviewCommentContext>;
-    threads: Map<string, ThreadContextRecord>;
+    threads: Map<string, LinkedContextRecord>;
   }>({ terminals: new Map(), reviewComments: new Map(), threads: new Map() });
   const removedAttachmentContextPayloadsRef = useRef<RetainedAttachmentContextPayloads>({
     files: new Map(),
@@ -4167,6 +4206,33 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         }
         return;
       }
+      if (item.type === "member") {
+        if (trigger.kind !== "path") return;
+        const member = puntosMembers.find(
+          (candidate) => `member:${candidate.providerInstanceId}` === item.id,
+        );
+        if (!member) return;
+        const record = memberContextRecord(member);
+        const replacement = `${formatInlineContextReference(threadContextReference(record))} `;
+        const replacementRangeEnd = extendReplacementRangeForTrailingSpace(
+          snapshot.value,
+          trigger.rangeEnd,
+          replacement,
+        );
+        const applied = applyPromptReplacement(
+          trigger.rangeStart,
+          replacementRangeEnd,
+          replacement,
+          { expectedText: snapshot.value.slice(trigger.rangeStart, replacementRangeEnd) },
+        );
+        if (applied) {
+          addComposerDraftThreadContexts(attachmentDraftTarget, [record], {
+            appendReference: false,
+          });
+          setComposerHighlightedItemId(null);
+        }
+        return;
+      }
     },
     [
       addComposerDraftReviewComment,
@@ -4177,6 +4243,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       handleInteractionModeChange,
       planModeUiEnabled,
       onUsageLimitsCommand,
+      puntosMembers,
       resolveActiveComposerTrigger,
     ],
   );

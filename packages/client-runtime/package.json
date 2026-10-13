@@ -211,6 +211,10 @@
       "types": "./src/state/relayDiscovery.ts",
       "default": "./src/state/relayDiscovery.ts"
     },
+    "./state/puntos": {
+      "types": "./src/state/puntos.ts",
+      "default": "./src/state/puntos.ts"
+    },
     "./state/review": {
       "types": "./src/state/review.ts",
       "default": "./src/state/review.ts"

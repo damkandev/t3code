@@ -325,6 +325,35 @@ import {
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
 import {
+  PuntosAgent,
+  PuntosAgentFileDeleteInput,
+  PuntosAgentFilesInput,
+  PuntosAgentIdInput,
+  PuntosDirectory,
+  PuntosError,
+  PuntosGroup,
+  PuntosGroupEvent,
+  PuntosGroupIdInput,
+  PuntosGroupRef,
+  PuntosGithubLoginInput,
+  PuntosGithubLoginResult,
+  PuntosGithubStatus,
+  PuntosHostSkill,
+  PuntosSaveSkillInput,
+  PuntosSkillRefInput,
+  PuntosMessage,
+  PuntosOk,
+  PuntosOpenDirectInput,
+  PuntosOpenDirectResult,
+  PuntosSaveAgentInput,
+  PuntosSaveGroupInput,
+  PuntosSaveSpaceInput,
+  PuntosSpace,
+  PuntosSpaceIdInput,
+  PuntosSendMessageInput,
+  PuntosSetTokenInput,
+} from "./puntos.ts";
+import {
   StorageCleanupReport,
   ServerSettings,
   ServerSettingsError,
@@ -522,6 +551,27 @@ export const WS_METHODS = {
   secretsAnswerRequest: "secrets.answerRequest",
   scheduledTasksListWebhookDeliveries: "scheduledTasks.listWebhookDeliveries",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
+  puntosSubscribeDirectory: "puntos.subscribeDirectory",
+  puntosSubscribeGroup: "puntos.subscribeGroup",
+  puntosSendMessage: "puntos.sendMessage",
+  puntosSaveSpace: "puntos.saveSpace",
+  puntosDeleteSpace: "puntos.deleteSpace",
+  puntosSaveGroup: "puntos.saveGroup",
+  puntosDeleteGroup: "puntos.deleteGroup",
+  puntosOpenDirect: "puntos.openDirect",
+  puntosSaveAgent: "puntos.saveAgent",
+  puntosDeleteAgent: "puntos.deleteAgent",
+  puntosResetAgent: "puntos.resetAgent",
+  puntosAddAgentFiles: "puntos.addAgentFiles",
+  puntosDeleteAgentFile: "puntos.deleteAgentFile",
+  puntosSetToken: "puntos.setToken",
+  puntosGithubStatus: "puntos.githubStatus",
+  puntosGithubLogin: "puntos.githubLogin",
+  puntosGithubLogout: "puntos.githubLogout",
+  puntosSaveSkill: "puntos.saveSkill",
+  puntosDeleteSkill: "puntos.deleteSkill",
+  puntosListHostSkills: "puntos.listHostSkills",
+  puntosImportSkill: "puntos.importSkill",
 
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
@@ -1844,6 +1894,115 @@ const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   },
 );
 
+const PuntosRpcError = Schema.Union([PuntosError, EnvironmentAuthorizationError]);
+const WsPuntosSubscribeDirectoryRpc = Rpc.make(WS_METHODS.puntosSubscribeDirectory, {
+  payload: Schema.Struct({}),
+  success: PuntosDirectory,
+  error: PuntosRpcError,
+  stream: true,
+});
+const WsPuntosSubscribeGroupRpc = Rpc.make(WS_METHODS.puntosSubscribeGroup, {
+  payload: PuntosGroupRef,
+  success: PuntosGroupEvent,
+  error: PuntosRpcError,
+  stream: true,
+});
+const WsPuntosSendMessageRpc = Rpc.make(WS_METHODS.puntosSendMessage, {
+  payload: PuntosSendMessageInput,
+  success: PuntosMessage,
+  error: PuntosRpcError,
+});
+const WsPuntosSaveSpaceRpc = Rpc.make(WS_METHODS.puntosSaveSpace, {
+  payload: PuntosSaveSpaceInput,
+  success: PuntosSpace,
+  error: PuntosRpcError,
+});
+const WsPuntosDeleteSpaceRpc = Rpc.make(WS_METHODS.puntosDeleteSpace, {
+  payload: PuntosSpaceIdInput,
+  success: PuntosOk,
+  error: PuntosRpcError,
+});
+const WsPuntosSaveGroupRpc = Rpc.make(WS_METHODS.puntosSaveGroup, {
+  payload: PuntosSaveGroupInput,
+  success: PuntosGroup,
+  error: PuntosRpcError,
+});
+const WsPuntosDeleteGroupRpc = Rpc.make(WS_METHODS.puntosDeleteGroup, {
+  payload: PuntosGroupIdInput,
+  success: PuntosOk,
+  error: PuntosRpcError,
+});
+const WsPuntosOpenDirectRpc = Rpc.make(WS_METHODS.puntosOpenDirect, {
+  payload: PuntosOpenDirectInput,
+  success: PuntosOpenDirectResult,
+  error: PuntosRpcError,
+});
+const WsPuntosSaveAgentRpc = Rpc.make(WS_METHODS.puntosSaveAgent, {
+  payload: PuntosSaveAgentInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosDeleteAgentRpc = Rpc.make(WS_METHODS.puntosDeleteAgent, {
+  payload: PuntosAgentIdInput,
+  success: PuntosOk,
+  error: PuntosRpcError,
+});
+const WsPuntosResetAgentRpc = Rpc.make(WS_METHODS.puntosResetAgent, {
+  payload: PuntosAgentIdInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosAddAgentFilesRpc = Rpc.make(WS_METHODS.puntosAddAgentFiles, {
+  payload: PuntosAgentFilesInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosDeleteAgentFileRpc = Rpc.make(WS_METHODS.puntosDeleteAgentFile, {
+  payload: PuntosAgentFileDeleteInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosSetTokenRpc = Rpc.make(WS_METHODS.puntosSetToken, {
+  payload: PuntosSetTokenInput,
+  success: PuntosOk,
+  error: PuntosRpcError,
+});
+const WsPuntosGithubStatusRpc = Rpc.make(WS_METHODS.puntosGithubStatus, {
+  payload: PuntosAgentIdInput,
+  success: PuntosGithubStatus,
+  error: PuntosRpcError,
+});
+const WsPuntosGithubLoginRpc = Rpc.make(WS_METHODS.puntosGithubLogin, {
+  payload: PuntosGithubLoginInput,
+  success: PuntosGithubLoginResult,
+  error: PuntosRpcError,
+});
+const WsPuntosSaveSkillRpc = Rpc.make(WS_METHODS.puntosSaveSkill, {
+  payload: PuntosSaveSkillInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosDeleteSkillRpc = Rpc.make(WS_METHODS.puntosDeleteSkill, {
+  payload: PuntosSkillRefInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosListHostSkillsRpc = Rpc.make(WS_METHODS.puntosListHostSkills, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(PuntosHostSkill),
+  error: PuntosRpcError,
+});
+const WsPuntosImportSkillRpc = Rpc.make(WS_METHODS.puntosImportSkill, {
+  payload: PuntosSkillRefInput,
+  success: PuntosAgent,
+  error: PuntosRpcError,
+});
+const WsPuntosGithubLogoutRpc = Rpc.make(WS_METHODS.puntosGithubLogout, {
+  payload: PuntosAgentIdInput,
+  success: PuntosOk,
+  error: PuntosRpcError,
+});
+
 const WsSubscribeAuthAccessRpc = Rpc.make(WS_METHODS.subscribeAuthAccess, {
   payload: Schema.Struct({}),
   success: AuthAccessStreamEvent,
@@ -1936,6 +2095,27 @@ export const WsRpcGroup = RpcGroup.make(
   WsSecretsAnswerRequestRpc,
   WsScheduledTasksListWebhookDeliveriesRpc,
   WsScheduledTasksGetWebhookDeliveryRpc,
+  WsPuntosSubscribeDirectoryRpc,
+  WsPuntosSubscribeGroupRpc,
+  WsPuntosSendMessageRpc,
+  WsPuntosSaveSpaceRpc,
+  WsPuntosDeleteSpaceRpc,
+  WsPuntosSaveGroupRpc,
+  WsPuntosDeleteGroupRpc,
+  WsPuntosOpenDirectRpc,
+  WsPuntosSaveAgentRpc,
+  WsPuntosDeleteAgentRpc,
+  WsPuntosResetAgentRpc,
+  WsPuntosAddAgentFilesRpc,
+  WsPuntosDeleteAgentFileRpc,
+  WsPuntosSetTokenRpc,
+  WsPuntosGithubStatusRpc,
+  WsPuntosGithubLoginRpc,
+  WsPuntosGithubLogoutRpc,
+  WsPuntosSaveSkillRpc,
+  WsPuntosDeleteSkillRpc,
+  WsPuntosListHostSkillsRpc,
+  WsPuntosImportSkillRpc,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,
   WsServerGetBackgroundPolicyRpc,

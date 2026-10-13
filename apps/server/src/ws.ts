@@ -123,6 +123,7 @@ import * as ThreadLaunchService from "./orchestration-v2/ThreadLaunchService.ts"
 import * as ThreadMessageIntake from "./orchestration-v2/ThreadMessageIntake.ts";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
+import * as Puntos from "./puntos/PuntosService.ts";
 import * as SecretRequests from "./secrets/SecretRequests.ts";
 import {
   archivedShellStreamItemFromThreadShell,
@@ -1240,6 +1241,7 @@ const layerWsRpc = (
       const threadLaunch = yield* ThreadLaunchService.ThreadLaunchService;
       const providerSessionManager = yield* ProviderSessionManager.ProviderSessionManagerV2;
       const scheduledTasks = yield* ScheduledTasks.ScheduledTaskService;
+      const puntos = yield* Puntos.PuntosService;
       const secretRequests = yield* SecretRequests.SecretRequests;
       const pullRequests = yield* PullRequestService.PullRequestService;
       const reviewGuides = yield* PullRequestReviewGuideService.PullRequestReviewGuideService;
@@ -2099,6 +2101,29 @@ const layerWsRpc = (
           Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
             Effect.andThen(scheduledTasks.getWebhookDelivery(input)),
           ),
+        [WS_METHODS.puntosSubscribeDirectory]: (_input) => puntos.subscribeDirectory,
+        [WS_METHODS.puntosSubscribeGroup]: (input) => puntos.subscribeGroup(input),
+        [WS_METHODS.puntosSendMessage]: (input) => puntos.sendMessage(input),
+        [WS_METHODS.puntosSaveSpace]: (input) => puntos.saveSpace(input),
+        [WS_METHODS.puntosDeleteSpace]: (input) => puntos.deleteSpace(input.id).pipe(Effect.as({})),
+        [WS_METHODS.puntosSaveGroup]: (input) => puntos.saveGroup(input),
+        [WS_METHODS.puntosDeleteGroup]: (input) => puntos.deleteGroup(input).pipe(Effect.as({})),
+        [WS_METHODS.puntosOpenDirect]: (input) => puntos.openDirect(input),
+        [WS_METHODS.puntosSaveAgent]: (input) => puntos.saveAgent(input),
+        [WS_METHODS.puntosDeleteAgent]: (input) => puntos.deleteAgent(input.id).pipe(Effect.as({})),
+        [WS_METHODS.puntosResetAgent]: (input) => puntos.resetAgent(input.id),
+        [WS_METHODS.puntosAddAgentFiles]: (input) =>
+          puntos.addAgentFiles(input.id, input.attachments),
+        [WS_METHODS.puntosDeleteAgentFile]: (input) => puntos.deleteAgentFile(input.id, input.name),
+        [WS_METHODS.puntosSetToken]: (input) => puntos.setToken(input.token).pipe(Effect.as({})),
+        [WS_METHODS.puntosGithubStatus]: (input) => puntos.githubStatus(input.id),
+        [WS_METHODS.puntosGithubLogin]: (input) => puntos.githubLogin(input.id, input.scopes),
+        [WS_METHODS.puntosSaveSkill]: (input) => puntos.saveSkill(input.id, input.skill),
+        [WS_METHODS.puntosDeleteSkill]: (input) => puntos.deleteSkill(input.id, input.name),
+        [WS_METHODS.puntosListHostSkills]: (_input) => puntos.listHostSkills,
+        [WS_METHODS.puntosImportSkill]: (input) => puntos.importSkill(input.id, input.name),
+        [WS_METHODS.puntosGithubLogout]: (input) =>
+          puntos.githubLogout(input.id).pipe(Effect.as({})),
         [WS_METHODS.serverProbe]: (_input) => Effect.succeed({}),
         [WS_METHODS.serverGetConfig]: (_input) => loadServerConfig({ usageLimitsCommand: false }),
         [WS_METHODS.serverSearchAcpRegistry]: (input) =>

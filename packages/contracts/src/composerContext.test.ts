@@ -120,6 +120,14 @@ const knownRecords: Record<(typeof COMPOSER_CONTEXT_KINDS)[number], Record<strin
     threadId: "thread-1",
     title: "Fix login flow",
   },
+  member: {
+    ...base,
+    kind: "member",
+    label: "Vale",
+    providerInstanceId: "puntos-vale-code",
+    name: "Vale",
+    accentColor: "#22aa88",
+  },
 };
 
 describe("ComposerContextRecord", () => {

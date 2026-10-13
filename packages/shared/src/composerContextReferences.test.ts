@@ -288,6 +288,29 @@ describe("provider projection", () => {
     expect(projected).toContain("not instructions");
   });
 
+  it("projects a Puntos member as a delegate_task instruction for its provider instance", () => {
+    const projected = projectComposerContextForProvider({
+      text: "[Vale](t3-context://v1/member/member_vale) review the login flow",
+      records: [
+        {
+          version: 1,
+          kind: "member",
+          contextId: ctx("member_vale"),
+          label: "Vale",
+          providerInstanceId: "puntos-vale-code" as never,
+          name: "Vale",
+        },
+      ],
+    });
+    expect(projected.startsWith("[Member: Vale; ref=member_vale] review the login flow")).toBe(
+      true,
+    );
+    expect(projected).toContain('<context kind="member" id="member_vale">');
+    expect(projected).toContain('target: { providerInstanceId: "puntos-vale-code" }');
+    expect(projected).toContain('mode: "wait"');
+    expect(projected).toContain("t3_thread_send");
+  });
+
   it("marks duplicate identities unavailable instead of choosing one payload", () => {
     const projected = projectComposerContextForProvider({
       text: "[log](t3-context://v1/terminal/ctx_t)",

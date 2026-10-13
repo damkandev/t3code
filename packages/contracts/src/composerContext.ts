@@ -8,6 +8,7 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
 } from "./baseSchemas.ts";
+import { ProviderInstanceId } from "./providerInstance.ts";
 
 /**
  * Inline context records: the typed payload behind every composer chip.
@@ -28,6 +29,7 @@ export const COMPOSER_CONTEXT_KINDS = [
   "mention",
   "skill",
   "thread",
+  "member",
 ] as const;
 export type KnownComposerContextKind = (typeof COMPOSER_CONTEXT_KINDS)[number];
 
@@ -234,6 +236,20 @@ export const ThreadContextRecord = Schema.Struct({
 });
 export type ThreadContextRecord = typeof ThreadContextRecord.Type;
 
+/**
+ * A Puntos member (a persona provider instance) the user addressed. The agent consults it
+ * through `delegate_task`; only identity travels and the name is a display snapshot.
+ */
+export const MemberContextRecord = Schema.Struct({
+  ...recordBase,
+  kind: Schema.Literal("member"),
+  providerInstanceId: ProviderInstanceId,
+  name: ContextLabel,
+  /** The instance's accent at mention time, so chips render without provider state. */
+  accentColor: Schema.optionalKey(Schema.String.check(Schema.isPattern(/^#[0-9a-f]{6}$/i))),
+});
+export type MemberContextRecord = typeof MemberContextRecord.Type;
+
 const isJson = Schema.is(Schema.Json);
 
 /**
@@ -271,6 +287,7 @@ export const KnownComposerContextRecord = Schema.Union([
   MentionContextRecord,
   SkillContextRecord,
   ThreadContextRecord,
+  MemberContextRecord,
 ]);
 export type KnownComposerContextRecord = typeof KnownComposerContextRecord.Type;
 

@@ -9,10 +9,12 @@ import type {
   FileContextRecord,
   ImageContextRecord,
   KnownComposerContextRecord,
+  MemberContextRecord,
   MessageId,
   OrchestrationMessageContext,
   PreviewAnnotationContextRecord,
   PreviewAnnotationPayload,
+  ProviderInstanceId,
   ReviewCommentContextRecord,
   ScopedThreadRef,
   TerminalContextRecord,
@@ -162,8 +164,32 @@ function threadContextId(threadId: ThreadId): ComposerContextId {
   return toKindScopedComposerContextId("thread", threadId);
 }
 
-export function threadContextReference(record: ThreadContextRecord): ComposerContextReference {
-  return { kind: "thread", contextId: record.contextId, label: record.label };
+/**
+ * Identity-only records the draft keeps verbatim: attached threads and addressed Puntos members.
+ * They share the draft's `threadContexts` storage because neither has a producer-side shape.
+ */
+export type LinkedContextRecord = ThreadContextRecord | MemberContextRecord;
+
+export function threadContextReference(record: LinkedContextRecord): ComposerContextReference {
+  return { kind: record.kind, contextId: record.contextId, label: record.label };
+}
+
+/** One record per member: mentioning the same member twice reuses the chip. */
+export function memberContextRecord(member: {
+  providerInstanceId: ProviderInstanceId;
+  name: string;
+  accentColor?: string | undefined;
+}): MemberContextRecord {
+  const label = sanitizeComposerContextLabel(member.name, "member");
+  return {
+    version: 1,
+    kind: "member",
+    contextId: toKindScopedComposerContextId("member", member.providerInstanceId),
+    label,
+    providerInstanceId: member.providerInstanceId,
+    name: label,
+    ...(member.accentColor ? { accentColor: member.accentColor } : {}),
+  };
 }
 
 export function threadContextRecord(ref: ScopedThreadRef, title: string): ThreadContextRecord {
@@ -319,7 +345,7 @@ export function buildMessageContext(input: {
   terminalContexts: ReadonlyArray<TerminalContextDraft>;
   reviewComments: ReadonlyArray<ReviewCommentContext>;
   previewAnnotations: ReadonlyArray<PreviewAnnotationPayload>;
-  threadContexts?: ReadonlyArray<ThreadContextRecord>;
+  threadContexts?: ReadonlyArray<LinkedContextRecord>;
   attachments?: ReadonlyArray<BoundComposerAttachment>;
 }): OrchestrationMessageContext | undefined {
   // An annotation's screenshot travels as the image attachment that reuses its id.

@@ -20,7 +20,7 @@ import {
   UserRoundIcon,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useLayoutEffect, useRef } from "react";
+import { memo, type ReactNode, useLayoutEffect, useRef } from "react";
 
 import { type ComposerSlashCommand, type ComposerTriggerKind } from "../../composer-logic";
 import { cn } from "~/lib/utils";
@@ -73,6 +73,13 @@ export type ComposerCommandItem =
       id: string;
       type: "thread";
       thread: ScopedThreadRef;
+      label: string;
+      description: string;
+    }
+  | {
+      id: string;
+      type: "member";
+      icon: ReactNode;
       label: string;
       description: string;
     };
@@ -199,6 +206,11 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
       ) : null}
       {props.item.type === "thread" ? (
         <MessagesSquareIcon aria-hidden="true" className="size-4 shrink-0 text-secondary-label" />
+      ) : null}
+      {props.item.type === "member" ? (
+        <span aria-hidden="true" className="flex size-4 shrink-0 items-center justify-center">
+          {props.item.icon}
+        </span>
       ) : null}
       {pullRequestPresentation ? (
         <pullRequestPresentation.Icon

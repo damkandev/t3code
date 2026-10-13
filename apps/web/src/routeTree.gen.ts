@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PuntosRouteImport } from './routes/puntos'
 import { Route as PairRouteImport } from './routes/pair'
 import { Route as ConnectAgentRouteImport } from './routes/connect-agent'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as ChatRouteImport } from './routes/_chat'
+import { Route as PuntosIndexRouteImport } from './routes/puntos.index'
 import { Route as ChatIndexRouteImport } from './routes/_chat.index'
 import { Route as SettingsStorageRouteImport } from './routes/settings.storage'
 import { Route as SettingsSourceControlRouteImport } from './routes/settings.source-control'
@@ -34,6 +36,8 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings.appear
 import { Route as ProjectsProjectKeyRouteImport } from './routes/projects.$projectKey'
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
+import { Route as PuntosSpaceIdIndexRouteImport } from './routes/puntos.$spaceId.index'
+import { Route as PuntosSpaceIdGroupIdRouteImport } from './routes/puntos.$spaceId.$groupId'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
 
@@ -50,6 +54,11 @@ const UsageRoute = UsageRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PuntosRoute = PuntosRouteImport.update({
+  id: '/puntos',
+  path: '/puntos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PairRoute = PairRouteImport.update({
@@ -70,6 +79,11 @@ const ConnectRoute = ConnectRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/_chat',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PuntosIndexRoute = PuntosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PuntosRoute,
 } as any)
 const ChatIndexRoute = ChatIndexRouteImport.update({
   id: '/',
@@ -162,6 +176,16 @@ const ChatNewRoute = ChatNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ChatRoute,
 } as any)
+const PuntosSpaceIdIndexRoute = PuntosSpaceIdIndexRouteImport.update({
+  id: '/$spaceId/',
+  path: '/$spaceId/',
+  getParentRoute: () => PuntosRoute,
+} as any)
+const PuntosSpaceIdGroupIdRoute = PuntosSpaceIdGroupIdRouteImport.update({
+  id: '/$spaceId/$groupId',
+  path: '/$spaceId/$groupId',
+  getParentRoute: () => PuntosRoute,
+} as any)
 const ChatDraftDraftIdRoute = ChatDraftDraftIdRouteImport.update({
   id: '/draft/$draftId',
   path: '/draft/$draftId',
@@ -179,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/connect': typeof ConnectRoute
   '/connect-agent': typeof ConnectAgentRoute
   '/pair': typeof PairRoute
+  '/puntos': typeof PuntosRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
@@ -199,8 +224,11 @@ export interface FileRoutesByFullPath {
   '/settings/snap-shot': typeof SettingsSnapShotRoute
   '/settings/source-control': typeof SettingsSourceControlRoute
   '/settings/storage': typeof SettingsStorageRoute
+  '/puntos/': typeof PuntosIndexRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/puntos/$spaceId/$groupId': typeof PuntosSpaceIdGroupIdRoute
+  '/puntos/$spaceId/': typeof PuntosSpaceIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
@@ -227,8 +255,11 @@ export interface FileRoutesByTo {
   '/settings/source-control': typeof SettingsSourceControlRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/': typeof ChatIndexRoute
+  '/puntos': typeof PuntosIndexRoute
   '/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/puntos/$spaceId/$groupId': typeof PuntosSpaceIdGroupIdRoute
+  '/puntos/$spaceId': typeof PuntosSpaceIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -236,6 +267,7 @@ export interface FileRoutesById {
   '/connect': typeof ConnectRoute
   '/connect-agent': typeof ConnectAgentRoute
   '/pair': typeof PairRoute
+  '/puntos': typeof PuntosRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
@@ -257,8 +289,11 @@ export interface FileRoutesById {
   '/settings/source-control': typeof SettingsSourceControlRoute
   '/settings/storage': typeof SettingsStorageRoute
   '/_chat/': typeof ChatIndexRoute
+  '/puntos/': typeof PuntosIndexRoute
   '/_chat/$environmentId/$threadId': typeof ChatEnvironmentIdThreadIdRoute
   '/_chat/draft/$draftId': typeof ChatDraftDraftIdRoute
+  '/puntos/$spaceId/$groupId': typeof PuntosSpaceIdGroupIdRoute
+  '/puntos/$spaceId/': typeof PuntosSpaceIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -267,6 +302,7 @@ export interface FileRouteTypes {
     | '/connect'
     | '/connect-agent'
     | '/pair'
+    | '/puntos'
     | '/settings'
     | '/usage'
     | '/welcome'
@@ -287,8 +323,11 @@ export interface FileRouteTypes {
     | '/settings/snap-shot'
     | '/settings/source-control'
     | '/settings/storage'
+    | '/puntos/'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/puntos/$spaceId/$groupId'
+    | '/puntos/$spaceId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connect'
@@ -315,14 +354,18 @@ export interface FileRouteTypes {
     | '/settings/source-control'
     | '/settings/storage'
     | '/'
+    | '/puntos'
     | '/$environmentId/$threadId'
     | '/draft/$draftId'
+    | '/puntos/$spaceId/$groupId'
+    | '/puntos/$spaceId'
   id:
     | '__root__'
     | '/_chat'
     | '/connect'
     | '/connect-agent'
     | '/pair'
+    | '/puntos'
     | '/settings'
     | '/usage'
     | '/welcome'
@@ -344,8 +387,11 @@ export interface FileRouteTypes {
     | '/settings/source-control'
     | '/settings/storage'
     | '/_chat/'
+    | '/puntos/'
     | '/_chat/$environmentId/$threadId'
     | '/_chat/draft/$draftId'
+    | '/puntos/$spaceId/$groupId'
+    | '/puntos/$spaceId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -353,6 +399,7 @@ export interface RootRouteChildren {
   ConnectRoute: typeof ConnectRoute
   ConnectAgentRoute: typeof ConnectAgentRoute
   PairRoute: typeof PairRoute
+  PuntosRoute: typeof PuntosRouteWithChildren
   SettingsRoute: typeof SettingsRouteWithChildren
   UsageRoute: typeof UsageRoute
   WelcomeRoute: typeof WelcomeRoute
@@ -382,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/puntos': {
+      id: '/puntos'
+      path: '/puntos'
+      fullPath: '/puntos'
+      preLoaderRoute: typeof PuntosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pair': {
       id: '/pair'
       path: '/pair'
@@ -409,6 +463,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/puntos/': {
+      id: '/puntos/'
+      path: '/'
+      fullPath: '/puntos/'
+      preLoaderRoute: typeof PuntosIndexRouteImport
+      parentRoute: typeof PuntosRoute
     }
     '/_chat/': {
       id: '/_chat/'
@@ -536,6 +597,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatNewRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/puntos/$spaceId/': {
+      id: '/puntos/$spaceId/'
+      path: '/$spaceId'
+      fullPath: '/puntos/$spaceId/'
+      preLoaderRoute: typeof PuntosSpaceIdIndexRouteImport
+      parentRoute: typeof PuntosRoute
+    }
+    '/puntos/$spaceId/$groupId': {
+      id: '/puntos/$spaceId/$groupId'
+      path: '/$spaceId/$groupId'
+      fullPath: '/puntos/$spaceId/$groupId'
+      preLoaderRoute: typeof PuntosSpaceIdGroupIdRouteImport
+      parentRoute: typeof PuntosRoute
+    }
     '/_chat/draft/$draftId': {
       id: '/_chat/draft/$draftId'
       path: '/draft/$draftId'
@@ -570,6 +645,21 @@ const ChatRouteChildren: ChatRouteChildren = {
 }
 
 const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
+
+interface PuntosRouteChildren {
+  PuntosIndexRoute: typeof PuntosIndexRoute
+  PuntosSpaceIdGroupIdRoute: typeof PuntosSpaceIdGroupIdRoute
+  PuntosSpaceIdIndexRoute: typeof PuntosSpaceIdIndexRoute
+}
+
+const PuntosRouteChildren: PuntosRouteChildren = {
+  PuntosIndexRoute: PuntosIndexRoute,
+  PuntosSpaceIdGroupIdRoute: PuntosSpaceIdGroupIdRoute,
+  PuntosSpaceIdIndexRoute: PuntosSpaceIdIndexRoute,
+}
+
+const PuntosRouteWithChildren =
+  PuntosRoute._addFileChildren(PuntosRouteChildren)
 
 interface SettingsRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
@@ -614,6 +704,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConnectRoute: ConnectRoute,
   ConnectAgentRoute: ConnectAgentRoute,
   PairRoute: PairRoute,
+  PuntosRoute: PuntosRouteWithChildren,
   SettingsRoute: SettingsRouteWithChildren,
   UsageRoute: UsageRoute,
   WelcomeRoute: WelcomeRoute,
